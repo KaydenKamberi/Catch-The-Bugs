@@ -1,0 +1,218 @@
+[gd_scene load_steps=19 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="1_player"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_grass"]
+frequency = 0.03
+
+[sub_resource type="Gradient" id="Gradient_grass"]
+colors = PackedColorArray(0.65, 0.65, 0.65, 1, 1, 1, 1, 1)
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_grass"]
+seamless = true
+color_ramp = SubResource("Gradient_grass")
+noise = SubResource("FastNoiseLite_grass")
+
+[sub_resource type="StandardMaterial3D" id="Mat_Grass"]
+albedo_texture = SubResource("NoiseTexture2D_grass")
+uv1_scale = Vector3(0.15, 0.15, 0.15)
+uv1_triplanar = true
+albedo_color = Color(0.36, 0.58, 0.22, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_Fence"]
+albedo_color = Color(0.55, 0.4, 0.28, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="Mat_Brick"]
+albedo_color = Color(0.62, 0.3, 0.24, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="Mat_Cardboard"]
+albedo_color = Color(0.74, 0.57, 0.37, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="Mat_Stick"]
+albedo_color = Color(0.88, 0.74, 0.5, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="Mat_SugarCube"]
+albedo_color = Color(0.97, 0.97, 0.95, 1)
+roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="Mat_ToyRed"]
+albedo_color = Color(0.85, 0.18, 0.15, 1)
+roughness = 0.5
+
+[sub_resource type="StandardMaterial3D" id="Mat_ToyBlue"]
+albedo_color = Color(0.15, 0.4, 0.85, 1)
+roughness = 0.5
+
+[sub_resource type="StandardMaterial3D" id="Mat_BottleCap"]
+albedo_color = Color(0.8, 0.1, 0.1, 1)
+metallic = 0.6
+roughness = 0.35
+
+[sub_resource type="StandardMaterial3D" id="Mat_SodaCan"]
+albedo_color = Color(0.75, 0.77, 0.8, 1)
+metallic = 0.9
+roughness = 0.25
+
+[sub_resource type="StandardMaterial3D" id="Mat_Pencil"]
+albedo_color = Color(0.95, 0.75, 0.15, 1)
+roughness = 0.6
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
+sky_horizon_color = Color(0.66, 0.78, 0.9, 1)
+ground_horizon_color = Color(0.66, 0.78, 0.9, 1)
+
+[sub_resource type="Sky" id="Sky_main"]
+sky_material = SubResource("ProceduralSkyMaterial_sky")
+
+[sub_resource type="Environment" id="Environment_main"]
+background_mode = 2
+sky = SubResource("Sky_main")
+ambient_light_source = 3
+reflected_light_source = 2
+tonemap_mode = 2
+ssao_enabled = true
+fog_enabled = true
+fog_light_color = Color(0.7, 0.8, 0.9, 1)
+fog_density = 0.003
+fog_sky_affect = 0.0
+
+[node name="World" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_main")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.819152, 0.439385, -0.368688, 0, 0.642788, 0.766044, 0.573576, -0.627507, 0.526541, 0, 20, 0)
+shadow_enabled = true
+
+[node name="Level" type="Node3D" parent="."]
+
+[node name="Ground" type="CSGBox3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+use_collision = true
+size = Vector3(120, 1, 120)
+material = SubResource("Mat_Grass")
+
+[node name="Fence_North" type="CSGBox3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 12.5, -60.5)
+use_collision = true
+size = Vector3(122, 25, 1)
+material = SubResource("Mat_Fence")
+
+[node name="Fence_South" type="CSGBox3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 12.5, 60.5)
+use_collision = true
+size = Vector3(122, 25, 1)
+material = SubResource("Mat_Fence")
+
+[node name="Fence_East" type="CSGBox3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 60.5, 12.5, 0)
+use_collision = true
+size = Vector3(1, 25, 120)
+material = SubResource("Mat_Fence")
+
+[node name="Fence_West" type="CSGBox3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -60.5, 12.5, 0)
+use_collision = true
+size = Vector3(1, 25, 120)
+material = SubResource("Mat_Fence")
+
+[node name="BrickWall" type="CSGBox3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 4, 4)
+use_collision = true
+size = Vector3(1.5, 8, 24)
+material = SubResource("Mat_Brick")
+
+[node name="CardboardBox_Giant" type="CSGBox3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 5, -34)
+use_collision = true
+size = Vector3(14, 10, 14)
+material = SubResource("Mat_Cardboard")
+
+[node name="Plank_ToGiantBox" type="CSGBox3D" parent="Level"]
+transform = Transform3D(-1, 0, 0, 0, 0.902861, 0.429934, 0, 0.429934, -0.902861, 10, 4.496978, -15.908841)
+use_collision = true
+size = Vector3(3.5, 0.4, 24.759407)
+material = SubResource("Mat_Stick")
+
+[node name="CardboardBox_Small" type="CSGBox3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 3, -24)
+use_collision = true
+size = Vector3(8, 6, 8)
+material = SubResource("Mat_Cardboard")
+
+[node name="Plank_ToSmallBox" type="CSGBox3D" parent="Level"]
+transform = Transform3D(-1, 0, 0, 0, 0.936329, 0.351123, 0, 0.351123, -0.936329, 24, 2.549392, -11.367978)
+use_collision = true
+size = Vector3(3, 0.4, 18.588007)
+material = SubResource("Mat_Stick")
+
+[node name="SugarCube_1" type="CSGBox3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.6, -10)
+use_collision = true
+size = Vector3(1.6, 1.2, 1.6)
+material = SubResource("Mat_SugarCube")
+
+[node name="SugarCube_Stack" type="CSGBox3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 1.2, -13.5)
+use_collision = true
+size = Vector3(1.6, 2.4, 1.6)
+material = SubResource("Mat_SugarCube")
+
+[node name="ToyBlock_Red" type="CSGBox3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 1.8, -19.3)
+use_collision = true
+size = Vector3(6, 3.6, 6)
+material = SubResource("Mat_ToyRed")
+
+[node name="ToyBlock_Blue" type="CSGBox3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.8, 4.3, -20.5)
+use_collision = true
+size = Vector3(3.5, 1.4, 3.5)
+material = SubResource("Mat_ToyBlue")
+
+[node name="PopsicleStick_ToRedBlock" type="CSGBox3D" parent="Level"]
+transform = Transform3D(0, -0.311039, 0.950397, 0, 0.950397, 0.311039, -1, 0, 0, -15.166142, 1.424161, -19.3)
+use_collision = true
+size = Vector3(2, 0.3, 13.074109)
+material = SubResource("Mat_Stick")
+
+[node name="BottleCap_1" type="CSGCylinder3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.4, -12)
+use_collision = true
+radius = 1.6
+height = 0.8
+sides = 32
+material = SubResource("Mat_BottleCap")
+
+[node name="BottleCap_2" type="CSGCylinder3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.4, -17)
+use_collision = true
+radius = 1.6
+height = 0.8
+sides = 32
+material = SubResource("Mat_BottleCap")
+
+[node name="Pencil" type="CSGCylinder3D" parent="Level"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 2, 0.4, 9)
+use_collision = true
+radius = 0.4
+height = 18
+sides = 32
+material = SubResource("Mat_Pencil")
+
+[node name="SodaCan" type="CSGCylinder3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28, 6, -32)
+use_collision = true
+radius = 3.5
+height = 12
+sides = 32
+material = SubResource("Mat_SodaCan")
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
