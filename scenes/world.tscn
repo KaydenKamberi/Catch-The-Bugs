@@ -1,6 +1,8 @@
-[gd_scene load_steps=19 format=3]
+[gd_scene load_steps=21 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="1_player"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/ant.tscn" id="2_ant"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="3_hud"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_grass"]
 frequency = 0.03
@@ -216,3 +218,16 @@ material = SubResource("Mat_SodaCan")
 
 [node name="Player" parent="." instance=ExtResource("1_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+
+[node name="Enemies" type="Node3D" parent="."]
+
+[node name="Ant1" parent="Enemies" instance=ExtResource("2_ant")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0.3, -12)
+
+[node name="Ant2" parent="Enemies" instance=ExtResource("2_ant")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0.3, -6)
+
+[node name="Ant3" parent="Enemies" instance=ExtResource("2_ant")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.3, -30)
+
+[node name="HUD" parent="." instance=ExtResource("3_hud")]

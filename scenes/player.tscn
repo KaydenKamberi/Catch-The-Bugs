@@ -1,6 +1,6 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=16 format=3]
 
-[ext_resource type="Script" path="res://scripts/player.gd" id="1_player_script"]
+[ext_resource type="Script" uid="uid://dpmwcgcmkpar3" path="res://scripts/player.gd" id="1_player_script"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_collider"]
 radius = 0.35
@@ -31,10 +31,41 @@ albedo_color = Color(0.9, 0.35, 0.1, 1)
 material = SubResource("StandardMaterial3D_nose")
 size = Vector3(0.12, 0.12, 0.2)
 
+[sub_resource type="SphereMesh" id="SphereMesh_hand"]
+material = SubResource("StandardMaterial3D_skin")
+radius = 0.09
+height = 0.18
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_spear_wood"]
+albedo_color = Color(0.55, 0.38, 0.2, 1)
+roughness = 0.8
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_spear_shaft"]
+material = SubResource("StandardMaterial3D_spear_wood")
+top_radius = 0.025
+bottom_radius = 0.025
+height = 1.6
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_spear_tip"]
+albedo_color = Color(0.6, 0.62, 0.65, 1)
+metallic = 0.3
+roughness = 0.4
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_spear_tip"]
+material = SubResource("StandardMaterial3D_spear_tip")
+top_radius = 0.0
+bottom_radius = 0.06
+height = 0.3
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_attack_hitbox"]
+size = Vector3(1.4, 1.4, 1.6)
+
 [sub_resource type="SphereShape3D" id="SphereShape3D_camera"]
 radius = 0.2
 
-[node name="Player" type="CharacterBody3D"]
+[node name="Player" type="CharacterBody3D" groups=["player"]]
+collision_layer = 2
+collision_mask = 5
 script = ExtResource("1_player_script")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
@@ -54,6 +85,29 @@ mesh = SubResource("SphereMesh_head")
 [node name="Nose" type="MeshInstance3D" parent="Body"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -0.27)
 mesh = SubResource("BoxMesh_nose")
+
+[node name="Spear" type="Node3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38, 0.95, -0.1)
+
+[node name="Hand" type="MeshInstance3D" parent="Body/Spear"]
+mesh = SubResource("SphereMesh_hand")
+
+[node name="Shaft" type="MeshInstance3D" parent="Body/Spear"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, -0.3)
+mesh = SubResource("CylinderMesh_spear_shaft")
+
+[node name="Tip" type="MeshInstance3D" parent="Body/Spear"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, -1.25)
+mesh = SubResource("CylinderMesh_spear_tip")
+
+[node name="AttackHitbox" type="Area3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, -1.1)
+collision_layer = 0
+collision_mask = 4
+monitorable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Body/AttackHitbox"]
+shape = SubResource("BoxShape3D_attack_hitbox")
 
 [node name="CameraPivot" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
