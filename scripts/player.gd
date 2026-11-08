@@ -15,6 +15,8 @@ extends CharacterBody3D
 
 ## Sent whenever our health changes (the HUD listens to this).
 signal health_changed(current: int, maximum: int)
+## Sent when we craft and put on a new weapon or armor (the HUD listens to this).
+signal equipment_changed
 
 
 # ---------------------------------------------------------------------------
@@ -28,6 +30,8 @@ signal health_changed(current: int, maximum: int)
 ## True while we're a human. Later, when we shapeshift into a bug, this becomes
 ## false and the spear is put away.
 @export var is_human: bool = true
+## The name of the weapon we start with. Crafting a better one replaces it.
+@export var weapon_name: String = "Wooden Spear"
 ## Damage per spear hit.
 @export var attack_damage: int = 5
 ## Seconds you have to wait between attacks.
@@ -69,6 +73,8 @@ signal health_changed(current: int, maximum: int)
 @onready var spring_arm: SpringArm3D = $CameraPivot/SpringArm3D
 @onready var spear: Node3D = $Body/Spear
 @onready var attack_hitbox: Area3D = $Body/AttackHitbox
+@onready var spear_tip: MeshInstance3D = $Body/Spear/Tip
+@onready var torso: MeshInstance3D = $Body/Torso
 
 # Gravity strength, read from Project Settings > Physics > 3D (9.8 by default).
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
@@ -78,6 +84,10 @@ var spawn_position: Vector3        # where we respawn after dying
 var attack_cooldown_left: float = 0.0
 var attack_facing_time_left: float = 0.0  # while > 0, face the camera direction
 var spear_rest_position: Vector3   # where the spear sits when we're not attacking
+
+# What we've crafted and are wearing (null = nothing crafted yet).
+var weapon_recipe: Recipe = null
+var armor_recipe: Recipe = null
 
 
 func _ready() -> void:
@@ -211,3 +221,41 @@ func respawn() -> void:
 	velocity = Vector3.ZERO
 	health = max_health
 	health_changed.emit(health, max_health)
+
+
+# ---------------------------------------------------------------------------
+# Equipment (from crafting)
+# ---------------------------------------------------------------------------
+
+## Put on something we just crafted. The crafting menu calls this.
+func equip(recipe: Recipe) -> void:
+	match recipe.kind:
+		Recipe.Kind.WEAPON:
+			weapon_recipe = recipe
+			weapon_name = recipe.display_name
+			attack_damage = recipe.weapon_damage
+			_paint(spear_tip, recipe.color)
+		Recipe.Kind.ARMOR:
+			# If we already wear armor, take its bonus off first.
+			if armor_recipe != null:
+				max_health -= armor_recipe.bonus_max_health
+				health = mini(health, max_health)
+			armor_recipe = recipe
+			max_health += recipe.bonus_max_health
+			health += recipe.bonus_max_health  # the new armor also adds health right away
+			_paint(torso, recipe.color)
+			health_changed.emit(health, max_health)
+	equipment_changed.emit()
+
+
+## True if this exact recipe is what we're wearing right now.
+func is_equipped(recipe: Recipe) -> bool:
+	return recipe == weapon_recipe or recipe == armor_recipe
+
+
+## Change a mesh's color by giving it a new material.
+func _paint(mesh: MeshInstance3D, color: Color) -> void:
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = 0.4
+	mesh.material_override = material
