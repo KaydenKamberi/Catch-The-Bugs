@@ -1,8 +1,10 @@
-[gd_scene load_steps=21 format=3]
+[gd_scene load_steps=24 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/ant.tscn" id="2_ant"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="3_hud"]
+[ext_resource type="Script" path="res://scripts/enemies/bug_spawner.gd" id="4_spawner"]
+[ext_resource type="PackedScene" path="res://scenes/ui/crafting_menu.tscn" id="5_crafting"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_grass"]
 frequency = 0.03
@@ -63,6 +65,10 @@ roughness = 0.25
 [sub_resource type="StandardMaterial3D" id="Mat_Pencil"]
 albedo_color = Color(0.95, 0.75, 0.15, 1)
 roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="Mat_Dirt"]
+albedo_color = Color(0.45, 0.32, 0.2, 1)
+roughness = 1.0
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
 sky_horizon_color = Color(0.66, 0.78, 0.9, 1)
@@ -230,4 +236,20 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0.3, -6)
 [node name="Ant3" parent="Enemies" instance=ExtResource("2_ant")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.3, -30)
 
+[node name="AntHill" type="Node3D" parent="Enemies"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0, 20)
+script = ExtResource("4_spawner")
+bug_scene = ExtResource("2_ant")
+
+[node name="Mound" type="CSGCylinder3D" parent="Enemies/AntHill"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+use_collision = true
+radius = 3.0
+height = 1.6
+sides = 24
+cone = true
+material = SubResource("Mat_Dirt")
+
 [node name="HUD" parent="." instance=ExtResource("3_hud")]
+
+[node name="CraftingMenu" parent="." instance=ExtResource("5_crafting")]

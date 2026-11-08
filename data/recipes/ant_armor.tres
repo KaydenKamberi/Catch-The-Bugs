@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Recipe" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/crafting/recipe.gd" id="1_recipe"]
+
+[resource]
+script = ExtResource("1_recipe")
+display_name = "Ant Armor"
+description = "Tough ant shell plates strapped to your chest."
+cost = {
+"Ant Parts": 5
+}
+kind = 1
+bonus_max_health = 25
+color = Color(0.35, 0.13, 0.08, 1)
