@@ -37,6 +37,7 @@ func _on_first_hit() -> void:
 		helper.can_call_for_help = false
 		# Helpers show up already angry, so they run straight at the player.
 		helper.state = State.CHASE
+		helper.is_angry = true  # they know who attacked, even if you look like an ant
 		# Place each helper at a random spot in a circle around this ant.
 		var angle: float = randf() * TAU
 		# (y = 0.5 puts it a little above the ground, so it doesn't start inside the floor.)

@@ -72,6 +72,32 @@ theme_override_constants/outline_size = 5
 theme_override_font_sizes/font_size = 18
 text = "Inventory: (empty)"
 
+[node name="FormLabel" type="Label" parent="."]
+offset_left = 20.0
+offset_top = 112.0
+offset_right = 900.0
+offset_bottom = 140.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.75, 1, 0.75, 1)
+text = "Form: Human"
+
+[node name="NoticeLabel" type="Label" parent="."]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -400.0
+offset_top = 140.0
+offset_right = 400.0
+offset_bottom = 176.0
+grow_horizontal = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+horizontal_alignment = 1
+
 [node name="HintLabel" type="Label" parent="."]
 anchors_preset = 2
 anchor_top = 1.0
@@ -84,4 +110,4 @@ grow_vertical = 0
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 5
 theme_override_colors/font_color = Color(1, 1, 1, 0.8)
-text = "WASD move  ·  Shift sprint  ·  Space jump  ·  Left click attack  ·  Tab crafting  ·  Esc free mouse"
+text = "WASD move  ·  Shift sprint  ·  Space jump  ·  Left click attack  ·  Q shapeshift  ·  Tab crafting  ·  Esc free mouse"

@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="BugForm" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/forms/bug_form.gd" id="1_form"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/ant_model.tscn" id="2_model"]
+
+[resource]
+script = ExtResource("1_form")
+form_name = "Ant"
+model_scene = ExtResource("2_model")
+token_item_name = "Ant Token"
+token_cost = 1
+duration = 30.0
+walk_speed = 6.0
+sprint_speed = 11.0
+jump_height = 1.0
+attack_name = "Bite"
+attack_damage = 4
+attack_cooldown = 0.6
+collider_radius = 0.5
+collider_height = 1.0
+camera_height = 0.9
+camera_distance = 3.5

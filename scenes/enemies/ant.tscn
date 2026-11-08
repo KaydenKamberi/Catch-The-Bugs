@@ -1,49 +1,10 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/enemies/ant.gd" id="1_ant_script"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/ant_model.tscn" id="2_ant_model"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ant"]
 size = Vector3(0.9, 0.8, 1.9)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ant_shell"]
-albedo_color = Color(0.3, 0.1, 0.06, 1)
-roughness = 0.35
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ant_eye"]
-albedo_color = Color(0.02, 0.02, 0.02, 1)
-roughness = 0.1
-
-[sub_resource type="SphereMesh" id="SphereMesh_abdomen"]
-material = SubResource("StandardMaterial3D_ant_shell")
-radius = 0.5
-height = 1.0
-
-[sub_resource type="SphereMesh" id="SphereMesh_thorax"]
-material = SubResource("StandardMaterial3D_ant_shell")
-radius = 0.2
-height = 0.4
-
-[sub_resource type="SphereMesh" id="SphereMesh_head"]
-material = SubResource("StandardMaterial3D_ant_shell")
-radius = 0.28
-height = 0.56
-
-[sub_resource type="SphereMesh" id="SphereMesh_eye"]
-material = SubResource("StandardMaterial3D_ant_eye")
-radius = 0.07
-height = 0.14
-
-[sub_resource type="BoxMesh" id="BoxMesh_mandible"]
-material = SubResource("StandardMaterial3D_ant_shell")
-size = Vector3(0.06, 0.06, 0.25)
-
-[sub_resource type="BoxMesh" id="BoxMesh_antenna"]
-material = SubResource("StandardMaterial3D_ant_shell")
-size = Vector3(0.035, 0.035, 0.55)
-
-[sub_resource type="BoxMesh" id="BoxMesh_leg"]
-material = SubResource("StandardMaterial3D_ant_shell")
-size = Vector3(0.7, 0.05, 0.05)
 
 [node name="Ant" type="CharacterBody3D" groups=["enemies"]]
 collision_layer = 4
@@ -54,64 +15,4 @@ script = ExtResource("1_ant_script")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
 shape = SubResource("BoxShape3D_ant")
 
-[node name="Body" type="Node3D" parent="."]
-
-[node name="Abdomen" type="MeshInstance3D" parent="Body"]
-transform = Transform3D(0.75, 0, 0, 0, 0.65, 0, 0, 0, 0.95, 0, 0.52, 0.48)
-mesh = SubResource("SphereMesh_abdomen")
-
-[node name="Thorax" type="MeshInstance3D" parent="Body"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1.5, 0, 0.45, -0.22)
-mesh = SubResource("SphereMesh_thorax")
-
-[node name="Head" type="MeshInstance3D" parent="Body"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, -0.6)
-mesh = SubResource("SphereMesh_head")
-
-[node name="Eye_L" type="MeshInstance3D" parent="Body"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.16, 0.63, -0.78)
-mesh = SubResource("SphereMesh_eye")
-
-[node name="Mandible_L" type="MeshInstance3D" parent="Body"]
-transform = Transform3D(0.906308, 0, -0.422618, 0, 1, 0, 0.422618, 0, 0.906308, -0.1, 0.42, -0.92)
-mesh = SubResource("BoxMesh_mandible")
-
-[node name="Antenna_L" type="MeshInstance3D" parent="Body"]
-transform = Transform3D(0.939693, 0.219846, 0.262003, 0, 0.766044, -0.642788, -0.34202, 0.604023, 0.719846, -0.172051, 0.926767, -0.917958)
-mesh = SubResource("BoxMesh_antenna")
-
-[node name="Leg_L1" type="MeshInstance3D" parent="Body"]
-transform = Transform3D(0.704333, -0.570358, -0.422618, 0.62932, 0.777146, 0, 0.328436, -0.265962, 0.906308, -0.366517, 0.199738, -0.514953)
-mesh = SubResource("BoxMesh_leg")
-
-[node name="Leg_L2" type="MeshInstance3D" parent="Body"]
-transform = Transform3D(0.777146, -0.62932, 0, 0.62932, 0.777146, 0, 0, 0, 1, -0.392001, 0.199738, -0.22)
-mesh = SubResource("BoxMesh_leg")
-
-[node name="Leg_L3" type="MeshInstance3D" parent="Body"]
-transform = Transform3D(0.704333, -0.570358, 0.422618, 0.62932, 0.777146, 0, -0.328436, 0.265962, 0.906308, -0.366517, 0.199738, 0.074953)
-mesh = SubResource("BoxMesh_leg")
-
-[node name="Eye_R" type="MeshInstance3D" parent="Body"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.16, 0.63, -0.78)
-mesh = SubResource("SphereMesh_eye")
-
-[node name="Mandible_R" type="MeshInstance3D" parent="Body"]
-transform = Transform3D(0.906308, 0, 0.422618, 0, 1, 0, -0.422618, 0, 0.906308, 0.1, 0.42, -0.92)
-mesh = SubResource("BoxMesh_mandible")
-
-[node name="Antenna_R" type="MeshInstance3D" parent="Body"]
-transform = Transform3D(0.939693, -0.219846, -0.262003, 0, 0.766044, -0.642788, 0.34202, 0.604023, 0.719846, 0.172051, 0.926767, -0.917958)
-mesh = SubResource("BoxMesh_antenna")
-
-[node name="Leg_R1" type="MeshInstance3D" parent="Body"]
-transform = Transform3D(0.704333, 0.570358, 0.422618, -0.62932, 0.777146, 0, -0.328436, -0.265962, 0.906308, 0.366517, 0.199738, -0.514953)
-mesh = SubResource("BoxMesh_leg")
-
-[node name="Leg_R2" type="MeshInstance3D" parent="Body"]
-transform = Transform3D(0.777146, 0.62932, 0, -0.62932, 0.777146, 0, 0, 0, 1, 0.392001, 0.199738, -0.22)
-mesh = SubResource("BoxMesh_leg")
-
-[node name="Leg_R3" type="MeshInstance3D" parent="Body"]
-transform = Transform3D(0.704333, 0.570358, -0.422618, -0.62932, 0.777146, 0, 0.328436, 0.265962, 0.906308, 0.366517, 0.199738, 0.074953)
-mesh = SubResource("BoxMesh_leg")
+[node name="Body" parent="." instance=ExtResource("2_ant_model")]

@@ -15,11 +15,18 @@ extends CharacterBody3D
 ## The bug is always in one of two moods ("states"):
 ##   WANDER - strolls to random spots near where it started.
 ##   CHASE  - runs at the player and attacks when close enough.
+##
+## If the player shapeshifts into this bug's species, the bug ignores them
+## (until the player attacks it).
 
 ## Sent just before the bug disappears.
 signal died(enemy: BugEnemy)
 
 enum State { WANDER, CHASE }
+
+## Which kind of bug this is. A player shapeshifted into this species
+## (a BugForm with the same name) is ignored.
+@export var species: String = "Ant"
 
 @export_group("Health")
 @export var max_health: int = 12
@@ -72,6 +79,8 @@ var state: State = State.WANDER
 var player: Player
 var is_dead: bool = false
 var has_been_hit: bool = false
+## Once true, this bug chases the player even if they're disguised as one of us.
+var is_angry: bool = false
 
 # Wandering
 var home_position: Vector3     # where the bug started; it wanders around here
@@ -136,6 +145,15 @@ func _physics_process(delta: float) -> void:
 func _update_state() -> void:
 	if player == null:
 		return
+
+	# Is the player disguised as one of us? Then we don't notice them,
+	# unless they made us angry by attacking us.
+	if player.is_disguised_as(species) and not is_angry:
+		if state == State.CHASE:
+			state = State.WANDER
+			_pick_wander_target()
+		return
+
 	var distance: float = global_position.distance_to(player.global_position)
 	if state == State.WANDER and distance < detection_range:
 		state = State.CHASE
@@ -234,7 +252,8 @@ func take_damage(amount: int) -> void:
 	health -= amount
 	_set_flash(true)
 	flash_time_left = hit_flash_time
-	state = State.CHASE  # hitting a bug makes it angry
+	state = State.CHASE  # hitting a bug makes it angry...
+	is_angry = true      # ...and it stays angry, even at a disguised player
 
 	if not has_been_hit:
 		has_been_hit = true
