@@ -14,6 +14,7 @@ extends Resource
 enum Kind {
 	WEAPON,  ## Replaces the spear's damage.
 	ARMOR,   ## Adds to your max health.
+	ITEM,    ## Goes into your inventory (e.g. the Shapeshift Staff). You can only own one.
 }
 
 ## The name shown in the crafting menu, e.g. "Ant Spear".
@@ -56,4 +57,6 @@ func get_stats_text() -> String:
 			return "Damage: %d" % weapon_damage
 		Kind.ARMOR:
 			return "Max HP: +%d" % bonus_max_health
+		Kind.ITEM:
+			return "Item"
 	return ""

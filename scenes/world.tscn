@@ -1,10 +1,11 @@
-[gd_scene load_steps=24 format=3]
+[gd_scene load_steps=25 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/ant.tscn" id="2_ant"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="3_hud"]
 [ext_resource type="Script" path="res://scripts/enemies/bug_spawner.gd" id="4_spawner"]
 [ext_resource type="PackedScene" path="res://scenes/ui/crafting_menu.tscn" id="5_crafting"]
+[ext_resource type="PackedScene" path="res://scenes/ui/staff_menu.tscn" id="6_staff"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_grass"]
 frequency = 0.03
@@ -253,3 +254,5 @@ material = SubResource("Mat_Dirt")
 [node name="HUD" parent="." instance=ExtResource("3_hud")]
 
 [node name="CraftingMenu" parent="." instance=ExtResource("5_crafting")]
+
+[node name="StaffMenu" parent="." instance=ExtResource("6_staff")]

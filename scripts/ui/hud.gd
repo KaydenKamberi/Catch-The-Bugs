@@ -1,14 +1,19 @@
 extends CanvasLayer
-## The on-screen display: health bar, equipment, inventory, current form,
-## short messages, and a red flash when hurt.
-## It listens to signals instead of checking every frame, so it only updates
-## when something actually changes.
+## The on-screen display: health bar, equipment, inventory, current form and its
+## two moves with cooldowns, unlocked forms, an "In combat" warning, short
+## messages, and a red flash when hurt.
+##
+## Every Control in hud.tscn has Mouse > Filter set to Ignore, so the HUD never
+## blocks your clicks.
 
 @onready var health_bar: ProgressBar = $HealthBar
 @onready var health_label: Label = $HealthBar/HealthLabel
 @onready var inventory_label: Label = $InventoryLabel
 @onready var equipment_label: Label = $EquipmentLabel
 @onready var form_label: Label = $FormLabel
+@onready var moves_label: Label = $MovesLabel
+@onready var forms_label: Label = $FormsLabel
+@onready var combat_label: Label = $CombatLabel
 @onready var notice_label: Label = $NoticeLabel
 @onready var damage_flash: ColorRect = $DamageFlash
 
@@ -53,20 +58,37 @@ func _on_equipment_changed() -> void:
 
 
 func _process(delta: float) -> void:
-	# The form line has a countdown, so we update it every frame.
+	# Cooldowns tick down every frame, so these lines are updated every frame.
 	if player:
-		if player.is_human:
-			form_label.text = "Form: Human"
-		else:
-			var form: BugForm = player.current_form
-			form_label.text = "Form: %s (%d s left)    %s: %d dmg    Q to change back" % [
-				form.form_name, ceili(player.form_time_left), form.attack_name, form.attack_damage]
+		form_label.text = "Form: %s" % player.get_form_name()
+		moves_label.text = "%s    %s" % [_move_text(1, "LMB"), _move_text(2, "RMB")]
+		forms_label.text = _forms_text()
+		combat_label.visible = player.is_in_combat()
 
 	# Hide the message after a few seconds.
 	if notice_time_left > 0.0:
 		notice_time_left -= delta
 		if notice_time_left <= 0.0:
 			notice_label.text = ""
+
+
+## Text like "LMB Bite (3 dmg) ready" or "RMB Call for Help (1-2 helpers, 10 s) 14.2 s".
+func _move_text(slot: int, button_name: String) -> String:
+	var move: MoveData = player.get_move(slot)
+	if move == null:
+		return "%s -" % button_name
+	var time_left: float = player.get_cooldown_left(move)
+	var status: String = "ready" if time_left <= 0.0 else "%.1f s" % time_left
+	return "%s %s (%s) %s" % [button_name, move.move_name, move.get_summary(), status]
+
+
+## Text like "Unlocked forms: Human, Ant    Q: staff    E: swallow token".
+func _forms_text() -> String:
+	var names: Array[String] = ["Human"]
+	for form in player.unlocked_forms:
+		names.append(form.form_name)
+	var staff: String = "Q: staff" if player.has_staff() else "No staff"
+	return "Unlocked forms: %s    %s    E: swallow token" % [", ".join(names), staff]
 
 
 func _on_notice(text: String) -> void:
