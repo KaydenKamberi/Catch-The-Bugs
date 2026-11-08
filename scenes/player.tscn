@@ -1,0 +1,67 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://scripts/player.gd" id="1_player_script"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_collider"]
+radius = 0.35
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shirt"]
+albedo_color = Color(0.2, 0.45, 0.85, 1)
+roughness = 0.8
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_torso"]
+material = SubResource("StandardMaterial3D_shirt")
+radius = 0.3
+height = 1.2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_skin"]
+albedo_color = Color(0.96, 0.78, 0.62, 1)
+roughness = 0.7
+
+[sub_resource type="SphereMesh" id="SphereMesh_head"]
+material = SubResource("StandardMaterial3D_skin")
+radius = 0.25
+height = 0.5
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nose"]
+albedo_color = Color(0.9, 0.35, 0.1, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_nose"]
+material = SubResource("StandardMaterial3D_nose")
+size = Vector3(0.12, 0.12, 0.2)
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_camera"]
+radius = 0.2
+
+[node name="Player" type="CharacterBody3D"]
+script = ExtResource("1_player_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_collider")
+
+[node name="Body" type="Node3D" parent="."]
+
+[node name="Torso" type="MeshInstance3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, 0)
+mesh = SubResource("CapsuleMesh_torso")
+
+[node name="Head" type="MeshInstance3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+mesh = SubResource("SphereMesh_head")
+
+[node name="Nose" type="MeshInstance3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -0.27)
+mesh = SubResource("BoxMesh_nose")
+
+[node name="CameraPivot" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+
+[node name="SpringArm3D" type="SpringArm3D" parent="CameraPivot"]
+transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 0, 0)
+shape = SubResource("SphereShape3D_camera")
+spring_length = 4.5
+
+[node name="Camera3D" type="Camera3D" parent="CameraPivot/SpringArm3D"]
+current = true
