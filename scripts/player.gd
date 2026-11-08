@@ -1,19 +1,39 @@
+class_name Player
 extends CharacterBody3D
-## The tiny human: walks, sprints and jumps around the world.
+## The tiny human: walks, sprints, jumps, and fights with a spear.
 ## The camera orbits behind the player on a SpringArm3D, and the mouse turns it.
 ##
 ## Scene layout this script expects (see scenes/player.tscn):
 ##   Player (CharacterBody3D)   <- this script
 ##   ├─ CollisionShape3D        (capsule)
 ##   ├─ Body (Node3D)           <- the visible model; we turn this to face where we walk
+##   │  ├─ Spear (Node3D)       <- the weapon in our hand
+##   │  └─ AttackHitbox (Area3D) <- the zone in front of us that the spear hits
 ##   └─ CameraPivot (Node3D)    <- turns left/right (yaw) with the mouse
 ##      └─ SpringArm3D          <- tilts up/down (pitch), pulls the camera in front of walls
 ##         └─ Camera3D
+
+## Sent whenever our health changes (the HUD listens to this).
+signal health_changed(current: int, maximum: int)
 
 
 # ---------------------------------------------------------------------------
 # Settings you can tweak in the Inspector (click the Player node).
 # ---------------------------------------------------------------------------
+
+@export_group("Health")
+@export var max_health: int = 100
+
+@export_group("Combat")
+## True while we're a human. Later, when we shapeshift into a bug, this becomes
+## false and the spear is put away.
+@export var is_human: bool = true
+## Damage per spear hit.
+@export var attack_damage: int = 5
+## Seconds you have to wait between attacks.
+@export var attack_cooldown: float = 0.5
+## Seconds from the click until the hit lands (the middle of the thrust).
+@export var attack_hit_delay: float = 0.1
 
 @export_group("Movement")
 ## Normal walking speed, in meters per second.
@@ -47,9 +67,17 @@ extends CharacterBody3D
 @onready var body: Node3D = $Body
 @onready var camera_pivot: Node3D = $CameraPivot
 @onready var spring_arm: SpringArm3D = $CameraPivot/SpringArm3D
+@onready var spear: Node3D = $Body/Spear
+@onready var attack_hitbox: Area3D = $Body/AttackHitbox
 
 # Gravity strength, read from Project Settings > Physics > 3D (9.8 by default).
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+
+var health: int = 100
+var spawn_position: Vector3        # where we respawn after dying
+var attack_cooldown_left: float = 0.0
+var attack_facing_time_left: float = 0.0  # while > 0, face the camera direction
+var spear_rest_position: Vector3   # where the spear sits when we're not attacking
 
 
 func _ready() -> void:
@@ -58,15 +86,25 @@ func _ready() -> void:
 	# Stop the spring arm from "hitting" our own capsule and zooming in on us.
 	spring_arm.add_excluded_object(get_rid())
 
+	health = max_health
+	health_changed.emit(health, max_health)
+	spawn_position = global_position
+	spear_rest_position = spear.position
+	spear.visible = is_human
+
 
 func _unhandled_input(event: InputEvent) -> void:
 	# Esc ("ui_cancel" is Godot's built-in action for Esc) frees the mouse.
 	if event.is_action_pressed("ui_cancel"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
-	# Clicking in the window captures the mouse again.
-	elif event is InputEventMouseButton and event.pressed:
+	# Clicking in the window captures the mouse again (this click doesn't attack).
+	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+	# Left click (the "attack" action) while the mouse is captured: attack!
+	elif event.is_action_pressed("attack"):
+		attack()
 
 	# Moving the mouse turns the camera, but only while the mouse is captured.
 	elif event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -82,6 +120,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	# --- 0. Count down the attack timers. ---
+	attack_cooldown_left -= delta
+	attack_facing_time_left -= delta
+
 	# --- 1. Gravity: pull us down while we're in the air. ---
 	if not is_on_floor():
 		velocity.y -= gravity * delta
@@ -115,7 +157,10 @@ func _physics_process(delta: float) -> void:
 	velocity.z = horizontal_velocity.z
 
 	# --- 5. Turn the body to face the way we're moving. ---
-	if direction.length() > 0.0:
+	if attack_facing_time_left > 0.0:
+		# While attacking, keep facing where the camera looks, so you hit what you aim at.
+		body.rotation.y = camera_pivot.rotation.y
+	elif direction.length() > 0.0:
 		# In Godot, "forward" is -Z. This angle points the body's -Z along `direction`.
 		var target_angle: float = atan2(-direction.x, -direction.z)
 		# lerp_angle turns a little each frame, taking the short way around.
@@ -123,3 +168,46 @@ func _physics_process(delta: float) -> void:
 
 	# --- 6. Move! move_and_slide uses `velocity` and slides along walls and ramps. ---
 	move_and_slide()
+
+
+# ---------------------------------------------------------------------------
+# Combat
+# ---------------------------------------------------------------------------
+
+## Thrust the spear. Anything in the hitbox that can take damage gets hurt.
+func attack() -> void:
+	if not is_human or attack_cooldown_left > 0.0:
+		return
+	attack_cooldown_left = attack_cooldown
+
+	# Turn to face where the camera is looking.
+	attack_facing_time_left = 0.3
+	body.rotation.y = camera_pivot.rotation.y
+
+	# Thrust animation: poke the spear forward, then pull it back.
+	var tween := create_tween()
+	tween.tween_property(spear, "position", spear_rest_position + Vector3(0.0, 0.0, -0.5), 0.08)
+	tween.tween_property(spear, "position", spear_rest_position, 0.15)
+
+	# Wait until the middle of the thrust, then check what's in front of us.
+	# ("await" pauses this function without freezing the game.)
+	await get_tree().create_timer(attack_hit_delay).timeout
+	for hit_body in attack_hitbox.get_overlapping_bodies():
+		if hit_body.has_method("take_damage"):
+			hit_body.take_damage(attack_damage)
+
+
+## Called by enemies when they hurt us.
+func take_damage(amount: int) -> void:
+	health = maxi(health - amount, 0)
+	health_changed.emit(health, max_health)
+	if health == 0:
+		respawn()
+
+
+## Go back to the start with full health. (Your inventory is kept.)
+func respawn() -> void:
+	global_position = spawn_position
+	velocity = Vector3.ZERO
+	health = max_health
+	health_changed.emit(health, max_health)
