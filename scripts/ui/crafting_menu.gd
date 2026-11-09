@@ -8,6 +8,7 @@ extends CanvasLayer
 const RECIPE_FILES: Array[String] = [
 	"res://data/recipes/ant_spear.tres",
 	"res://data/recipes/ant_armor.tres",
+	"res://data/recipes/shapeshift_staff.tres",
 ]
 
 @onready var recipe_list: VBoxContainer = $Panel/Margin/VBox/RecipeList
@@ -36,7 +37,7 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_crafting"):
 		if visible:
 			close()
-		else:
+		elif not get_tree().paused:  # don't open on top of another menu (like the staff)
 			open()
 		get_viewport().set_input_as_handled()
 	elif visible and event.is_action_pressed("ui_cancel"):
@@ -95,8 +96,8 @@ func _make_row(recipe: Recipe) -> Control:
 	var button := Button.new()
 	button.custom_minimum_size = Vector2(120, 40)
 	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	if player != null and player.is_equipped(recipe):
-		button.text = "Equipped"
+	if _is_owned(recipe):
+		button.text = "Owned"
 		button.disabled = true
 	else:
 		button.text = "Craft"
@@ -109,12 +110,22 @@ func _make_row(recipe: Recipe) -> Control:
 
 
 func _craft(recipe: Recipe) -> void:
-	if player == null or not recipe.can_afford() or player.is_equipped(recipe):
+	if player == null or not recipe.can_afford() or _is_owned(recipe):
 		return
 	# Pay for it...
 	for item_name in recipe.cost:
 		Inventory.add_item(item_name, -recipe.cost[item_name])
-	# ...and put it on.
-	player.equip(recipe)
+	# ...and put it on (weapons and armor) or into the inventory (items).
+	if recipe.kind == Recipe.Kind.ITEM:
+		Inventory.add_item(recipe.display_name, 1)
+	else:
+		player.equip(recipe)
 	message_label.text = "Crafted %s!" % recipe.display_name
 	_rebuild_list()
+
+
+## True if we already have this: wearing it (weapon/armor) or carrying it (item).
+func _is_owned(recipe: Recipe) -> bool:
+	if recipe.kind == Recipe.Kind.ITEM:
+		return Inventory.get_count(recipe.display_name) > 0
+	return player != null and player.is_equipped(recipe)

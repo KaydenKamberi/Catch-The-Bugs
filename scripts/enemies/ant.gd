@@ -22,7 +22,8 @@ extends BugEnemy
 
 
 func _on_first_hit() -> void:
-	if not can_call_for_help:
+	# Friendly ants (summoned by the player) never call for help.
+	if is_ally or not can_call_for_help:
 		return
 	if randf() >= call_for_help_chance:
 		return  # no luck this time

@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="FormData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/forms/form_data.gd" id="1_form"]
+[ext_resource type="Script" path="res://scripts/forms/move_data.gd" id="2_move"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/ant_model.tscn" id="3_model"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/ant.tscn" id="4_ant"]
+
+[sub_resource type="Resource" id="Resource_bite"]
+script = ExtResource("2_move")
+move_name = "Bite"
+effect = 0
+damage = 3
+cooldown = 0.5
+reach = 1.0
+
+[sub_resource type="Resource" id="Resource_call_for_help"]
+script = ExtResource("2_move")
+move_name = "Call for Help"
+effect = 1
+damage = 0
+cooldown = 20.0
+summon_scene = ExtResource("4_ant")
+summon_min = 1
+summon_max = 2
+summon_lifetime = 10.0
+summon_distance = 2.5
+
+[resource]
+script = ExtResource("1_form")
+form_name = "Ant"
+model_scene = ExtResource("3_model")
+token_item_name = "Ant Token"
+move_speed = 6.5
+sprint_speed = 11.0
+jump_height = 1.0
+move_1 = SubResource("Resource_bite")
+move_2 = SubResource("Resource_call_for_help")
+collider_radius = 0.5
+collider_height = 1.0
+camera_height = 0.9
+camera_distance = 3.5

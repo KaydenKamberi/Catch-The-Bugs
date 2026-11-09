@@ -74,29 +74,31 @@ shape = SubResource("CapsuleShape3D_collider")
 
 [node name="Body" type="Node3D" parent="."]
 
-[node name="Torso" type="MeshInstance3D" parent="Body"]
+[node name="HumanModel" type="Node3D" parent="Body"]
+
+[node name="Torso" type="MeshInstance3D" parent="Body/HumanModel"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, 0)
 mesh = SubResource("CapsuleMesh_torso")
 
-[node name="Head" type="MeshInstance3D" parent="Body"]
+[node name="Head" type="MeshInstance3D" parent="Body/HumanModel"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
 mesh = SubResource("SphereMesh_head")
 
-[node name="Nose" type="MeshInstance3D" parent="Body"]
+[node name="Nose" type="MeshInstance3D" parent="Body/HumanModel"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -0.27)
 mesh = SubResource("BoxMesh_nose")
 
-[node name="Spear" type="Node3D" parent="Body"]
+[node name="Spear" type="Node3D" parent="Body/HumanModel"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38, 0.95, -0.1)
 
-[node name="Hand" type="MeshInstance3D" parent="Body/Spear"]
+[node name="Hand" type="MeshInstance3D" parent="Body/HumanModel/Spear"]
 mesh = SubResource("SphereMesh_hand")
 
-[node name="Shaft" type="MeshInstance3D" parent="Body/Spear"]
+[node name="Shaft" type="MeshInstance3D" parent="Body/HumanModel/Spear"]
 transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, -0.3)
 mesh = SubResource("CylinderMesh_spear_shaft")
 
-[node name="Tip" type="MeshInstance3D" parent="Body/Spear"]
+[node name="Tip" type="MeshInstance3D" parent="Body/HumanModel/Spear"]
 transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, -1.25)
 mesh = SubResource("CylinderMesh_spear_tip")
 
