@@ -1,0 +1,132 @@
+[gd_scene load_steps=19 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="1_player"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="2_hud"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
+sky_horizon_color = Color(0.66, 0.78, 0.9, 1)
+ground_horizon_color = Color(0.66, 0.78, 0.9, 1)
+
+[sub_resource type="Sky" id="Sky_main"]
+sky_material = SubResource("ProceduralSkyMaterial_sky")
+
+[sub_resource type="Environment" id="Environment_main"]
+background_mode = 2
+sky = SubResource("Sky_main")
+ambient_light_source = 3
+reflected_light_source = 2
+tonemap_mode = 2
+ssao_enabled = true
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_grass"]
+frequency = 0.03
+
+[sub_resource type="Gradient" id="Gradient_grass"]
+colors = PackedColorArray(0.65, 0.65, 0.65, 1, 1, 1, 1, 1)
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_grass"]
+seamless = true
+color_ramp = SubResource("Gradient_grass")
+noise = SubResource("FastNoiseLite_grass")
+
+[sub_resource type="StandardMaterial3D" id="Mat_Ground"]
+albedo_color = Color(0.36, 0.58, 0.22, 1)
+albedo_texture = SubResource("NoiseTexture2D_grass")
+roughness = 1.0
+uv1_scale = Vector3(0.15, 0.15, 0.15)
+uv1_triplanar = true
+
+[sub_resource type="StandardMaterial3D" id="Mat_Box"]
+albedo_color = Color(0.74, 0.57, 0.37, 1)
+roughness = 0.9
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_bark"]
+frequency = 0.08
+fractal_octaves = 3
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_bark"]
+seamless = true
+color_ramp = SubResource("Gradient_grass")
+noise = SubResource("FastNoiseLite_bark")
+
+[sub_resource type="StandardMaterial3D" id="Mat_Bark"]
+albedo_color = Color(0.42, 0.29, 0.18, 1)
+albedo_texture = SubResource("NoiseTexture2D_bark")
+roughness = 1.0
+uv1_scale = Vector3(0.3, 0.3, 0.3)
+uv1_triplanar = true
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_trunk"]
+material = SubResource("Mat_Bark")
+top_radius = 3.0
+bottom_radius = 3.0
+height = 40.0
+radial_segments = 32
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_trunk"]
+height = 40.0
+radius = 3.0
+
+[node name="TestMap" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_main")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.819152, 0.439385, -0.368688, 0, 0.642788, 0.766044, 0.573576, -0.627507, 0.526541, 0, 20, 0)
+shadow_enabled = true
+directional_shadow_max_distance = 150.0
+
+[node name="Level" type="Node3D" parent="."]
+
+[node name="Ground" type="CSGBox3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+use_collision = true
+size = Vector3(120, 1, 120)
+material = SubResource("Mat_Ground")
+
+[node name="Box_Step1" type="CSGBox3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.4, -4)
+use_collision = true
+size = Vector3(3, 0.8, 3)
+material = SubResource("Mat_Box")
+
+[node name="Box_Step2" type="CSGBox3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.75, -4)
+use_collision = true
+size = Vector3(3, 1.5, 3)
+material = SubResource("Mat_Box")
+
+[node name="Box_Step3" type="CSGBox3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 1.1, -4)
+use_collision = true
+size = Vector3(3, 2.2, 3)
+material = SubResource("Mat_Box")
+
+[node name="Box_Step4" type="CSGBox3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 1.5, -4)
+use_collision = true
+size = Vector3(3, 3, 3)
+material = SubResource("Mat_Box")
+
+[node name="Box_Lone" type="CSGBox3D" parent="Level"]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, -5, 0.6, 2)
+use_collision = true
+size = Vector3(2.5, 1.2, 2.5)
+material = SubResource("Mat_Box")
+
+[node name="OakTree" type="StaticBody3D" parent="Level" groups=["climbable"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -14)
+
+[node name="Trunk" type="MeshInstance3D" parent="Level/OakTree"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 20, 0)
+mesh = SubResource("CylinderMesh_trunk")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Level/OakTree"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 20, 0)
+shape = SubResource("CylinderShape3D_trunk")
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 4)
+
+[node name="HUD" parent="." instance=ExtResource("2_hud")]

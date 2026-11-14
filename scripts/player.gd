@@ -3,6 +3,12 @@ extends CharacterBody3D
 ## The tiny human: walks, sprints, jumps, fights, and can shapeshift into bugs.
 ## The camera orbits behind the player on a SpringArm3D, and the mouse turns it.
 ##
+## CLIMBING AND STAMINA
+## Walk into anything in the "climbable" group while holding W to grab it.
+## W/S climb up/down, A/D climb sideways, Space jumps off. Sprinting and
+## climbing use stamina; it refills after a short rest. At 0 stamina you can't
+## sprint and you fall off whatever you're climbing.
+##
 ## Scene layout this script expects (see scenes/player.tscn):
 ##   Player (CharacterBody3D)   <- this script
 ##   ├─ CollisionShape3D        (capsule; swapped for a smaller one in bug forms)
@@ -26,6 +32,8 @@ extends CharacterBody3D
 
 ## Sent whenever our health changes (the HUD listens to this).
 signal health_changed(current: int, maximum: int)
+## Sent whenever our stamina changes (the HUD listens to this).
+signal stamina_changed(current: float, maximum: float)
 ## Sent when we craft and put on a new weapon or armor (the HUD listens to this).
 signal equipment_changed
 ## Sent when we switch forms or unlock a new one.
@@ -46,7 +54,24 @@ const STAFF_ITEM_NAME: String = "Shapeshift Staff"
 # ---------------------------------------------------------------------------
 
 @export_group("Health")
+## Sugar Cube upgrades will raise this later.
 @export var max_health: int = 100
+## Falling below this height (in meters) counts as dying, e.g. off the edge of the map.
+@export var fall_death_height: float = -50.0
+
+@export_group("Stamina")
+## Sugar Cube upgrades will raise this later.
+@export var max_stamina: float = 100.0
+## Stamina used per second while sprinting.
+@export var sprint_stamina_drain: float = 20.0
+## Stamina used per second while climbing.
+@export var climb_stamina_drain: float = 12.0
+## Stamina gained back per second once it starts refilling.
+@export var stamina_regen_rate: float = 30.0
+## Seconds after you last used stamina before it starts refilling.
+@export var stamina_regen_delay: float = 1.0
+## After running out, you can't sprint or climb until stamina is back up to this much.
+@export var stamina_recover_amount: float = 20.0
 
 @export_group("Combat")
 ## The name of the weapon we start with. Crafting a better one replaces it.
@@ -72,8 +97,11 @@ const STAFF_ITEM_NAME: String = "Shapeshift Staff"
 @export var walk_speed: float = 5.0
 ## Speed while holding Shift.
 @export var sprint_speed: float = 9.0
-## How high a jump goes, in meters. (The player is 1.8 m tall.)
-@export var jump_height: float = 1.6
+## Upward speed when you jump, in meters per second. Higher = higher jumps.
+## (5.6 with gravity 9.8 jumps about 1.6 m. The player is 1.8 m tall.)
+@export var jump_strength: float = 5.6
+## How fast we fall, in meters per second, per second.
+@export var gravity: float = 9.8
 ## How fast we speed up when a movement key is held (meters per second, per second).
 @export var acceleration: float = 30.0
 ## How fast we slow down when no movement key is held.
@@ -82,6 +110,18 @@ const STAFF_ITEM_NAME: String = "Shapeshift Staff"
 @export_range(0.0, 1.0) var air_control: float = 0.35
 ## How quickly the body turns to face the direction we're moving.
 @export var turn_speed: float = 12.0
+
+@export_group("Climbing")
+## Speed when climbing up, down or sideways, in meters per second.
+@export var climb_speed: float = 2.5
+## When you jump off a wall: how hard you're pushed away from it.
+@export var climb_jump_push: float = 4.0
+## When you jump off a wall: how much you're pushed up.
+@export var climb_jump_up: float = 3.0
+## Seconds after letting go before you can grab a wall again.
+@export var climb_regrab_delay: float = 0.4
+## When you climb over the top: how much you're boosted up and onto it.
+@export var climb_top_boost: float = 4.5
 
 @export_group("Camera")
 ## How much the camera turns per pixel of mouse movement.
@@ -107,10 +147,16 @@ const STAFF_ITEM_NAME: String = "Shapeshift Staff"
 @onready var attack_hitbox: Area3D = $Body/AttackHitbox
 @onready var attack_hitbox_shape: CollisionShape3D = $Body/AttackHitbox/CollisionShape3D
 
-# Gravity strength, read from Project Settings > Physics > 3D (9.8 by default).
-var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
-
 var health: int = 100
+var stamina: float = 100.0
+var stamina_regen_wait: float = 0.0  # seconds left before stamina starts refilling
+## True after running out of stamina, until it refills to stamina_recover_amount.
+var exhausted: bool = false
+
+# Climbing
+var is_climbing: bool = false
+var wall_normal: Vector3 = Vector3.ZERO  # points out of the wall, toward us
+var climb_regrab_time_left: float = 0.0
 var spawn_position: Vector3        # where we respawn after dying
 var attack_facing_time_left: float = 0.0  # while > 0, face the camera direction
 var spear_rest_position: Vector3   # where the spear sits when we're not attacking
@@ -146,6 +192,8 @@ func _ready() -> void:
 
 	health = max_health
 	health_changed.emit(health, max_health)
+	stamina = max_stamina
+	stamina_changed.emit(stamina, max_stamina)
 	spawn_position = global_position
 	spear_rest_position = spear.position
 
@@ -185,6 +233,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("swallow_token"):
 		try_swallow_token()
 
+	# K (debug): hurt ourselves for 10, to test the health bar and dying.
+	elif event.is_action_pressed("debug_damage"):
+		take_damage(10)
+
 	# (Q, the staff, is handled by the staff menu: scripts/ui/staff_menu.gd.)
 
 	# Moving the mouse turns the camera, but only while the mouse is captured.
@@ -204,32 +256,53 @@ func _physics_process(delta: float) -> void:
 	# --- 0. Count down timers. ---
 	attack_facing_time_left -= delta
 	combat_time_left -= delta
+	climb_regrab_time_left -= delta
 	for move_name in cooldowns:
 		cooldowns[move_name] = maxf(cooldowns[move_name] - delta, 0.0)
+	_regen_stamina(delta)
 
-	# Bug forms move differently, so pick the numbers for our current form.
-	var current_walk_speed: float = walk_speed if is_human else current_form.move_speed
-	var current_sprint_speed: float = sprint_speed if is_human else current_form.sprint_speed
-	var current_jump_height: float = jump_height if is_human else current_form.jump_height
+	# Fell off the map? That counts as dying.
+	if global_position.y < fall_death_height:
+		die()
+		return
 
-	# --- 1. Gravity: pull us down while we're in the air. ---
-	if not is_on_floor():
-		velocity.y -= gravity * delta
-
-	# --- 2. Jump: only when standing on something. ---
-	if Input.is_action_just_pressed("jump") and is_on_floor():
-		# Physics formula: the upward speed needed to reach a given height.
-		velocity.y = sqrt(2.0 * gravity * current_jump_height)
-
-	# --- 3. Work out which way the keys are pushing us. ---
-	# get_vector gives a 2D direction: x = left/right, y = forward/back.
+	# --- 1. Work out which way the keys are pushing us. ---
+	# get_vector gives a 2D direction: x = left/right, y = forward/back (forward is -1).
 	var input_dir: Vector2 = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	# Turn it into 3D (on the ground plane), then rotate it to match where the
 	# camera is looking, so "W" always means "away from the camera".
 	var direction: Vector3 = Vector3(input_dir.x, 0.0, input_dir.y).rotated(Vector3.UP, camera_pivot.rotation.y)
 
-	# --- 4. Speed up or slow down smoothly. ---
-	var speed: float = current_sprint_speed if Input.is_action_pressed("sprint") else current_walk_speed
+	if is_climbing:
+		_climb(delta, input_dir)
+	else:
+		_walk(delta, direction)
+		_try_start_climbing(direction)
+
+
+## Walking, sprinting, jumping and falling.
+func _walk(delta: float, direction: Vector3) -> void:
+	# Bug forms move differently, so pick the numbers for our current form.
+	var current_walk_speed: float = walk_speed if is_human else current_form.move_speed
+	var current_sprint_speed: float = sprint_speed if is_human else current_form.sprint_speed
+
+	# --- 2. Gravity: pull us down while we're in the air. ---
+	if not is_on_floor():
+		velocity.y -= gravity * delta
+
+	# --- 3. Jump: only when standing on something. ---
+	if Input.is_action_just_pressed("jump") and is_on_floor():
+		if is_human:
+			velocity.y = jump_strength
+		else:
+			# Physics formula: the upward speed needed to reach the form's jump height.
+			velocity.y = sqrt(2.0 * gravity * current_form.jump_height)
+
+	# --- 4. Sprint (uses stamina), then speed up or slow down smoothly. ---
+	var is_sprinting: bool = Input.is_action_pressed("sprint") and direction.length() > 0.0 and can_use_stamina()
+	if is_sprinting:
+		_use_stamina(sprint_stamina_drain * delta)
+	var speed: float = current_sprint_speed if is_sprinting else current_walk_speed
 	var target_velocity: Vector3 = direction * speed
 
 	# Pick the rate: speeding up or slowing down, and less of it in the air.
@@ -256,6 +329,144 @@ func _physics_process(delta: float) -> void:
 
 	# --- 6. Move! move_and_slide uses `velocity` and slides along walls and ramps. ---
 	move_and_slide()
+
+
+# ---------------------------------------------------------------------------
+# Climbing
+# ---------------------------------------------------------------------------
+
+## After moving: if we walked into a climbable wall while holding forward, grab it.
+func _try_start_climbing(direction: Vector3) -> void:
+	if climb_regrab_time_left > 0.0 or not can_use_stamina():
+		return
+	if not Input.is_action_pressed("move_forward"):
+		return
+	for i in get_slide_collision_count():
+		var collision: KinematicCollision3D = get_slide_collision(i)
+		var normal: Vector3 = collision.get_normal()
+		if absf(normal.y) > 0.3:
+			continue  # that's a floor or a ceiling, not a wall
+		if not _is_climbable(collision.get_collider()):
+			continue
+		var flat_normal: Vector3 = Vector3(normal.x, 0.0, normal.z).normalized()
+		if direction.dot(-flat_normal) < 0.5:
+			continue  # we're only brushing past it, not walking into it
+		is_climbing = true
+		wall_normal = flat_normal
+		velocity = Vector3.ZERO
+		return
+
+
+## While on a wall: W/S climb up/down, A/D climb sideways, Space jumps off.
+func _climb(delta: float, input_dir: Vector2) -> void:
+	# Space: let go and push off the wall.
+	if Input.is_action_just_pressed("jump"):
+		_stop_climbing()
+		velocity = wall_normal * climb_jump_push + Vector3.UP * climb_jump_up
+		move_and_slide()
+		return
+
+	# Holding on is tiring. Out of stamina? We fall off.
+	_use_stamina(climb_stamina_drain * delta)
+	if stamina <= 0.0:
+		_stop_climbing()
+		notice.emit("Out of stamina!")
+		return
+
+	# Look for the wall in front of us again. Tree trunks are round, so the
+	# wall's direction changes as we climb around it.
+	var hit: Dictionary = _find_wall()
+	if hit.is_empty():
+		# The wall ended. If we were climbing up, we reached the top: hop onto it.
+		_stop_climbing()
+		if input_dir.y < 0.0:
+			velocity = Vector3.UP * climb_top_boost - wall_normal * 2.0
+		move_and_slide()
+		return
+	var normal: Vector3 = hit.normal
+	wall_normal = Vector3(normal.x, 0.0, normal.z).normalized()
+
+	# Stay snug against the wall: close any gap between us and it.
+	var gap: float = (hit.position - collision_shape.global_position).dot(-wall_normal) - _collider_radius()
+	if gap > 0.02:
+		global_position -= wall_normal * (gap - 0.02)
+
+	# Move along the wall. "Right" is to our right as we face the wall.
+	var right: Vector3 = (-wall_normal).cross(Vector3.UP)
+	var climb_dir: Vector3 = Vector3.UP * -input_dir.y + right * input_dir.x
+	velocity = climb_dir.limit_length(1.0) * climb_speed
+
+	# Face the wall.
+	body.rotation.y = atan2(wall_normal.x, wall_normal.z)
+	move_and_slide()
+
+	# Climbed all the way back down to the ground? Let go.
+	if is_on_floor() and input_dir.y > 0.0:
+		_stop_climbing()
+
+
+func _stop_climbing() -> void:
+	if not is_climbing:
+		return
+	is_climbing = false
+	climb_regrab_time_left = climb_regrab_delay
+
+
+## Cast a short ray from our middle toward the wall. Returns the hit, or {} if
+## there's no climbable wall there any more.
+func _find_wall() -> Dictionary:
+	var origin: Vector3 = collision_shape.global_position
+	var reach: float = _collider_radius() + 0.5
+	var query := PhysicsRayQueryParameters3D.create(origin, origin - wall_normal * reach, 1)  # layer 1 = World
+	query.exclude = [get_rid()]
+	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
+	if hit.is_empty() or absf(hit.normal.y) > 0.5 or not _is_climbable(hit.collider):
+		return {}
+	return hit
+
+
+## How wide our collision capsule is (it's smaller in bug forms).
+func _collider_radius() -> float:
+	var capsule := collision_shape.shape as CapsuleShape3D
+	return capsule.radius if capsule else 0.35
+
+
+## True if this node (or the node it belongs to) is in the "climbable" group.
+func _is_climbable(node: Object) -> bool:
+	var n := node as Node
+	if n == null:
+		return false
+	return n.is_in_group("climbable") or (n.get_parent() != null and n.get_parent().is_in_group("climbable"))
+
+
+# ---------------------------------------------------------------------------
+# Stamina
+# ---------------------------------------------------------------------------
+
+## True if we have the energy to sprint or climb right now.
+func can_use_stamina() -> bool:
+	return stamina > 0.0 and not exhausted
+
+
+func _use_stamina(amount: float) -> void:
+	stamina = maxf(stamina - amount, 0.0)
+	stamina_regen_wait = stamina_regen_delay
+	if stamina == 0.0:
+		exhausted = true
+	stamina_changed.emit(stamina, max_stamina)
+
+
+## Refill stamina a little, once we haven't used any for stamina_regen_delay seconds.
+func _regen_stamina(delta: float) -> void:
+	if stamina_regen_wait > 0.0:
+		stamina_regen_wait -= delta
+		return
+	if stamina >= max_stamina:
+		return
+	stamina = minf(stamina + stamina_regen_rate * delta, max_stamina)
+	if exhausted and stamina >= stamina_recover_amount:
+		exhausted = false
+	stamina_changed.emit(stamina, max_stamina)
 
 
 # ---------------------------------------------------------------------------
@@ -353,7 +564,7 @@ func take_damage(amount: int, _source: Node = null) -> void:
 	health = maxi(health - amount, 0)
 	health_changed.emit(health, max_health)
 	if health == 0:
-		respawn()
+		die()
 
 
 ## We're "in combat" if we dealt or took damage recently, or an enemy is chasing us.
@@ -367,14 +578,21 @@ func is_in_combat() -> bool:
 	return false
 
 
-## Go back to the start as a human with full health. (Inventory and unlocked forms are kept.)
-func respawn() -> void:
+## We ran out of health (or fell off the map): go back to the start point as a
+## human with full health and stamina. (Inventory and unlocked forms are kept.)
+func die() -> void:
+	_stop_climbing()
 	switch_to_form(null)
 	global_position = spawn_position
 	velocity = Vector3.ZERO
 	health = max_health
+	stamina = max_stamina
+	exhausted = false
+	stamina_regen_wait = 0.0
 	combat_time_left = 0.0
 	health_changed.emit(health, max_health)
+	stamina_changed.emit(stamina, max_stamina)
+	notice.emit("You died! Back to the start.")
 
 
 # ---------------------------------------------------------------------------

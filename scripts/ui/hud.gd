@@ -8,6 +8,8 @@ extends CanvasLayer
 
 @onready var health_bar: ProgressBar = $HealthBar
 @onready var health_label: Label = $HealthBar/HealthLabel
+@onready var stamina_bar: ProgressBar = $StaminaBar
+@onready var stamina_label: Label = $StaminaBar/StaminaLabel
 @onready var inventory_label: Label = $InventoryLabel
 @onready var equipment_label: Label = $EquipmentLabel
 @onready var form_label: Label = $FormLabel
@@ -26,9 +28,11 @@ func _ready() -> void:
 	player = get_tree().get_first_node_in_group("player") as Player
 	if player:
 		player.health_changed.connect(_on_health_changed)
+		player.stamina_changed.connect(_on_stamina_changed)
 		player.equipment_changed.connect(_on_equipment_changed)
 		player.notice.connect(_on_notice)
 		_on_health_changed(player.health, player.max_health)
+		_on_stamina_changed(player.stamina, player.max_stamina)
 		_on_equipment_changed()
 
 	Inventory.changed.connect(_on_inventory_changed)
@@ -46,6 +50,14 @@ func _on_health_changed(current: int, maximum: int) -> void:
 		var tween := create_tween()
 		tween.tween_property(damage_flash, "modulate:a", 0.0, 0.3)
 	last_health = current
+
+
+func _on_stamina_changed(current: float, maximum: float) -> void:
+	stamina_bar.max_value = maximum
+	stamina_bar.value = current
+	stamina_label.text = "Stamina %d / %d" % [ceili(current), ceili(maximum)]
+	# Grey the bar out while we're too tired to sprint or climb.
+	stamina_bar.modulate = Color(1, 1, 1, 1) if player.can_use_stamina() else Color(0.6, 0.6, 0.6, 1)
 
 
 func _on_inventory_changed() -> void:

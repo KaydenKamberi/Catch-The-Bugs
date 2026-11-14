@@ -3,7 +3,11 @@
 A 3D game made with **Godot 4** (GDScript). You play as a tiny human who hunts bugs,
 collects their tokens, and shapeshifts into them.
 
-**Current checkpoint: 4 (shapeshifting).** You can run around a giant backyard test room,
+**Checkpoint 1 (player) is in:** the game opens in a small test map (`scenes/test_map.tscn`)
+where you can walk, sprint, jump onto boxes and climb a giant oak trunk, with health and stamina
+bars. The later checkpoints live in `scenes/world.tscn`: open it and press **F6** to play it.
+
+**Latest checkpoint: 4 (shapeshifting).** In `world.tscn` you can run around a giant backyard test room,
 fight ants with a spear, collect the parts and tokens they drop, craft better gear from Ant
 Parts, swallow an Ant Token to become an ant, and switch forms with the Shapeshift Staff.
 
@@ -24,7 +28,9 @@ a hidden `.godot/` folder. That folder is in `.gitignore`, so it isn't committed
 | ---------------- | ------------------------------ |
 | W A S D          | Move                           |
 | Shift (hold)     | Sprint                         |
-| Space            | Jump                           |
+| Space            | Jump (or let go while climbing) |
+| Hold W into a climbable wall | Grab it and climb (W/S up/down, A/D sideways) |
+| K                | Debug: take 10 damage          |
 | Mouse            | Look around                    |
 | Left click       | Move 1 (spear, or Bite as an ant) |
 | Right click      | Move 2 (Call for Help as an ant) |
@@ -38,12 +44,34 @@ a hidden `.godot/` folder. That folder is in `.gitignore`, so it isn't committed
 
 Every number is an `@export` variable, so you can change it in the Inspector:
 
-- **Player** (`scenes/player.tscn`, click the Player node): speed, sprint, jump height, mouse
-  sensitivity, max health, spear damage and cooldown, combat timeout, DEBUG_GIVE_STAFF.
+- **Player** (`scenes/player.tscn`, click the Player node):
+  - Movement: walk speed, sprint speed, jump strength, gravity, acceleration, deceleration,
+    air control, turn speed.
+  - Camera: mouse sensitivity, min/max pitch.
+  - Climbing: climb speed, climb jump push/up, regrab delay, top boost.
+  - Health: max health, fall death height. Stamina: max stamina, sprint and climb drain,
+    regen rate, regen delay, recover amount.
+  - Combat: spear damage and cooldown, combat timeout. Shapeshifting: DEBUG_GIVE_STAFF.
 - **Forms** (`data/forms/ant_form.tres`): form speeds and jump, and each move's damage,
   cooldown, reach and helper count/duration.
 - **Ant** (`scenes/enemies/ant.tscn`, click the Ant node): health, speeds, detection range,
   Bite damage and cooldown, drop names and token chance, Call for Help chance.
+
+## Climbing and stamina
+
+Anything in the **climbable** group can be climbed (in the test map, that's the giant oak trunk).
+Walk into it while holding **W** to grab on. **W/S** climb up and down, **A/D** go sideways around
+it, and **Space** jumps off. Climb past the top and you hop up onto it.
+
+Sprinting and climbing use **stamina** (the yellow bar). It refills after you rest for a moment.
+If it hits 0 you fall off whatever you're climbing and can't sprint or climb again until it
+refills a bit (the bar goes grey until then).
+
+To make something climbable, select it (a StaticBody3D, or a CSG shape with Use Collision on),
+open the **Node** tab, then **Groups**, and add it to `climbable`.
+
+When your health hits 0 (or you fall off the map), `die()` sends you back to the start point
+with full health and stamina.
 
 ## Crafting
 
@@ -103,12 +131,13 @@ fight back against whoever hit them, including your allies.
 ## Folder layout
 
 ```
-project.godot      Project settings, input actions, main scene
-scenes/            world.tscn (test room), player.tscn (the tiny human)
+project.godot      Project settings, input actions, main scene (test_map.tscn)
+scenes/            test_map.tscn (main scene: Checkpoint 1 test map), world.tscn (backyard
+                   test room for combat/crafting/forms), player.tscn (the tiny human)
   enemies/         ant.tscn, ant_model.tscn (the ant's look, shared with the ant form)
   items/           pickup.tscn (floating drops)
-  ui/              hud.tscn (health bar, inventory, form), crafting_menu.tscn, staff_menu.tscn
-scripts/           player.gd (movement, camera, health, spear)
+  ui/              hud.tscn (health/stamina bars, inventory, form), crafting_menu.tscn, staff_menu.tscn
+scripts/           player.gd (movement, camera, climbing, health, stamina, spear)
   inventory.gd     Global inventory (an autoload called "Inventory")
   enemies/         bug_enemy.gd (shared by all bugs), ant.gd, bug_spawner.gd
   crafting/        recipe.gd (what a recipe is)
